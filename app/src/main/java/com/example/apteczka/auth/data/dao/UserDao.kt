@@ -1,23 +1,16 @@
-@file:Suppress("AndroidUnresolvedRoomSqlReference")
-
 package com.example.apteczka.auth.data.dao
 
-import androidx.room.*
-import com.example.apteczka.user.User
-
-import kotlinx.coroutines.flow.Flow
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.Query
+import com.example.apteczka.auth.data.model.User
 
 @Dao
 interface UserDao {
-    @Query("SELECT * FROM users")
-    fun getAllUsers(): Flow<List<User>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertUser(user: User): Long
+    @Insert
+    suspend fun insertUser(user: User)
 
-    @Delete
-    suspend fun deleteUser(user: User)
-
-    @Update
-    suspend fun updateUser(user: User)
+    @Query("SELECT * FROM User WHERE username = :username AND password = :password LIMIT 1")
+    suspend fun getUser(username: String, password: String): User?
 }
