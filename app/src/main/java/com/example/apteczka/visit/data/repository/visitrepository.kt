@@ -9,4 +9,8 @@ class VisitRepository(private val visitDao: VisitDao) {
     suspend fun getAllVisits(): List<Visit> = visitDao.getAll()
 
     suspend fun insertVisit(visit: Visit): Long = visitDao.insert(visit)
+
+    suspend fun deleteVisit(visit: Visit) {
+        visitDao.delete(visit)
+    }
 }

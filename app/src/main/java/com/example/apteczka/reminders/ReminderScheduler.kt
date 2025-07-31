@@ -15,7 +15,7 @@ object ReminderScheduler {
 
     @RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
     @RequiresApi(Build.VERSION_CODES.O)
-    fun scheduleVisitReminders(context: Context, visitId: Int, title: String, date: LocalDate) {
+    fun scheduleVisitReminders(context: Context, visitId: Long, title: String, date: LocalDate) {
         val daysBefore = listOf(7, 3, 1)
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
@@ -34,7 +34,7 @@ object ReminderScheduler {
 
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
-                visitId + day, // unikalne ID dla każdej wizyty + dnia
+                (visitId + day).toInt(), // unikalne ID dla każdej wizyty + dnia
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )

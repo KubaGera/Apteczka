@@ -19,22 +19,17 @@ import java.time.LocalDate
 @Composable
 fun HomeScreen(
     drugViewModel: DrugViewModel,
-    visitViewModel: VisitViewModel,
-    onAddDrugClick: () -> Unit,
-    onAddVisitClick: () -> Unit
+    visitViewModel: VisitViewModel
 ) {
-    // Zakładam, że masz w drugViewModel StateFlow<List<Drug>> z lekami
     val allDrugs by drugViewModel.drugs.collectAsState(initial = emptyList())
-
-    // Filtrowanie leków do wzięcia dzisiaj
-    val drugsToday = remember(allDrugs) {
-        allDrugs.filter { /* warunek na leki do dzisiaj, np. dailyDose > 0 */ it.dailyDose > 0 }
-    }
-
-    // Obserwuj najbliższą wizytę z VisitViewModel
     val nearestVisit by visitViewModel.nearestVisit.collectAsState()
+    val takenDrugs = remember { mutableStateMapOf<Int, Boolean>() }
 
-    val takenDrugs = remember { mutableStateMapOf<Int, Boolean>() } // mapowanie id leku na czy wzięty
+    val drugsToday = remember(allDrugs) {
+        allDrugs.filter { it.dailyDose > 0 && it.remainingQuantity > 0 &&
+                (it.nextDoseDate == null || !it.nextDoseDate.isAfter(LocalDate.now()))
+        }
+    }
 
     Column(modifier = Modifier.padding(16.dp)) {
         Text("Leki na dziś", style = MaterialTheme.typography.headlineSmall)
@@ -55,6 +50,7 @@ fun HomeScreen(
                             checked = takenDrugs[drug.id] ?: false,
                             onCheckedChange = { checked ->
                                 takenDrugs[drug.id] = checked
+                                if (checked) drugViewModel.takeDose(drug)
                             }
                         )
                         Text("${drug.name} - dawka: ${drug.dailyDose}")
@@ -73,18 +69,8 @@ fun HomeScreen(
         if (nearestVisit == null) {
             Text("Brak zaplanowanych wizyt")
         } else {
-            Text("Typ wizyty: ${nearestVisit?.title ?: "brak"}")
-            Text("Data: ${nearestVisit?.date ?: "-"}")
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(onClick = onAddDrugClick) {
-            Text("Dodaj nowy lek")
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = onAddVisitClick) {
-            Text("Dodaj nową wizytę")
+            Text("Typ wizyty: ${nearestVisit?.title}")
+            Text("Data: ${nearestVisit?.date}")
         }
     }
 }

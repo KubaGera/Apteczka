@@ -8,7 +8,9 @@ import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
 import com.example.apteczka.auth.data.repository.AuthRepository
 import com.example.apteczka.auth.viewmodel.AuthViewModel
 import com.example.apteczka.auth.viewmodel.AuthViewModelFactory
@@ -21,13 +23,14 @@ import com.example.apteczka.ui.theme.ApteczkaTheme
 import com.example.apteczka.visit.data.repository.VisitRepository
 import com.example.apteczka.visit.viewmodel.VisitViewModel
 import com.example.apteczka.visit.viewmodel.VisitViewModelFactory
+import com.example.apteczka.auth.ui.LoginScreen
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 👉 Utwórz kanał powiadomień dla przypomnień
+        // 🛎️ Tworzenie kanału powiadomień (dla przypomnień o wizytach)
         val channel = NotificationChannel(
             "visit_channel",
             "Przypomnienia o wizytach",
@@ -45,23 +48,35 @@ class MainActivity : ComponentActivity() {
                 val context = this
                 val db = AppDatabase.getInstance(context)
 
+                // ViewModel: Auth
                 val authRepository = AuthRepository(db.userDao())
                 val authFactory = AuthViewModelFactory(authRepository)
                 val authViewModel: AuthViewModel = viewModel(factory = authFactory)
 
+                // ViewModel: Leki
                 val drugRepository = DrugRepository(db.drugDao())
                 val drugFactory = DrugViewModelFactory(drugRepository)
                 val drugViewModel: DrugViewModel = viewModel(factory = drugFactory)
 
+                // ViewModel: Wizyty
                 val visitRepository = VisitRepository(db.visitDao())
-                val visitViewModelFactory = VisitViewModelFactory(visitRepository)
-                val visitViewModel: VisitViewModel = viewModel(factory = visitViewModelFactory)
+                val visitFactory = VisitViewModelFactory(visitRepository)
+                val visitViewModel: VisitViewModel = viewModel(factory = visitFactory)
 
-                AppNavigation(
-                    authViewModel = authViewModel,
-                    drugViewModel = drugViewModel,
-                    visitViewModel = visitViewModel
-                )
+                // Obserwuj, czy użytkownik jest zalogowany
+                val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+
+                if (!isLoggedIn) {
+                    // 🔐 Ekran logowania (jeśli nie zalogowano)
+                    LoginScreen(authViewModel = authViewModel)
+                } else {
+                    // 🧭 Nawigacja główna (jeśli zalogowano)
+                    AppNavigation(
+                        authViewModel = authViewModel,
+                        drugViewModel = drugViewModel,
+                        visitViewModel = visitViewModel
+                    )
+                }
             }
         }
     }

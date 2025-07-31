@@ -4,10 +4,14 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import com.example.apteczka.visit.data.repository.VisitRepository
 import com.example.apteczka.visit.model.Visit
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -15,45 +19,52 @@ class VisitViewModel(private val repository: VisitRepository) : ViewModel() {
 
     private val _visits = MutableStateFlow<List<Visit>>(emptyList())
     val visits: StateFlow<List<Visit>> = _visits
-
-    // Nowy StateFlow dla najbliższej wizyty
-    private val _nearestVisit = MutableStateFlow<Visit?>(null)
-    val nearestVisit: StateFlow<Visit?> = _nearestVisit
+    val nearestVisit: StateFlow<Visit?> = _visits
+        .map { visitsList ->
+            val today = LocalDate.now()
+            visitsList
+                .filter { !it.date.isBefore(today) } // daty dzisiejsze i przyszłe
+                .minByOrNull { it.date }
+        }
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     init {
-        loadVisits()
+        refreshVisits()
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun loadVisits() {
+    fun refreshVisits() {
         viewModelScope.launch {
             val allVisits = repository.getAllVisits()
             _visits.value = allVisits
-            updateNearestVisit(allVisits)
+            removePastVisits()  // usuń przeterminowane wizyty po załadowaniu
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun updateNearestVisit(visits: List<Visit>) {
-        val today = LocalDate.now()
-        val nearest = visits
-            .filter { it.date >= today }
-            .minByOrNull { it.date }
-        _nearestVisit.value = nearest
-    }
-
-    fun addVisit(visit: Visit, onVisitSaved: (visitId: Int) -> Unit) {
+    fun addVisit(visit: Visit, onVisitAdded: (visitId: Long) -> Unit) {
         viewModelScope.launch {
-            val id = repository.insertVisit(visit).toInt()
-            loadVisits()
-            onVisitSaved(id)
+            val visitId = repository.insertVisit(visit)
+            onVisitAdded(visitId)
+            refreshVisits()
+        }
+    }
+
+    fun deleteVisit(visit: Visit) {
+        viewModelScope.launch {
+            repository.deleteVisit(visit)
+            refreshVisits()
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun getUpcomingVisits(): List<Visit> {
+    private suspend fun removePastVisits() {
         val today = LocalDate.now()
-        return _visits.value.filter { it.date >= today }
+        // Filtrujemy przeterminowane wizyty i usuwamy je z repozytorium
+        val expiredVisits = _visits.value.filter { it.date.isBefore(today) }
+        for (visit in expiredVisits) {
+            repository.deleteVisit(visit)
+        }
+        // Po usunięciu odświeżamy listę wizyt
+        _visits.value = repository.getAllVisits()
     }
 }
-

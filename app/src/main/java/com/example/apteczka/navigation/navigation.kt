@@ -46,14 +46,15 @@ fun AppNavigation(
                 HomeScreen(
                     drugViewModel = drugViewModel,
                     visitViewModel = visitViewModel,
-                    onAddDrugClick = { navController.navigate(Screens.AddDrug.name) },
-                            onAddVisitClick = { navController.navigate(Screens.AddVisit.name) }
                 )
             }
             composable(Screens.Drugs.name) {
-                DrugListScreen(drugViewModel) {
-                    navController.navigate(Screens.AddDrug.name)
-                }
+                DrugListScreen(
+                drugViewModel = drugViewModel,
+                onAddClick = { navController.navigate(Screens.AddDrug.name) }
+                )
+
+
             }
             composable(Screens.AddDrug.name) {
                 AddEditDrugScreen(drugViewModel) {

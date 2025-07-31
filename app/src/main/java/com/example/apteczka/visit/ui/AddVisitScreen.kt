@@ -3,6 +3,7 @@ package com.example.apteczka.visit.ui
 import android.annotation.SuppressLint
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,16 +16,7 @@ import com.example.apteczka.visit.viewmodel.VisitViewModel
 import java.time.LocalDate
 import android.app.DatePickerDialog
 import android.widget.DatePicker
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-
 import java.util.Calendar
-
 
 @SuppressLint("MissingPermission")
 @RequiresApi(Build.VERSION_CODES.O)
@@ -37,9 +29,8 @@ fun AddVisitScreen(
 
     var title by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf(LocalDate.now()) }  // Zmienna data
+    var date by remember { mutableStateOf(LocalDate.now()) }
 
-    // Ustawienie kalendarza do DatePickerDialog
     val calendar = Calendar.getInstance()
     calendar.set(date.year, date.monthValue - 1, date.dayOfMonth)
 
@@ -53,7 +44,11 @@ fun AddVisitScreen(
         calendar.get(Calendar.DAY_OF_MONTH)
     )
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
@@ -72,7 +67,6 @@ fun AddVisitScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Klikalny tekst pokazujący wybraną datę
         Text(
             text = "Data wizyty: $date",
             modifier = Modifier
@@ -80,6 +74,8 @@ fun AddVisitScreen(
                 .clickable { datePickerDialog.show() }
                 .padding(vertical = 8.dp)
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = {
@@ -94,9 +90,10 @@ fun AddVisitScreen(
                     onVisitAdded()
                 }
             },
-            modifier = Modifier.padding(top = 16.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text("Dodaj wizytę")
         }
     }
 }
+
